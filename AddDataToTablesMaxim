@@ -1,0 +1,605 @@
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
+import pandas as pd
+
+# Define the connection parameters
+db_config = {
+    "username": "kolzhabay_58244",
+    "password": "2@#$KP",
+    "host": "dwh-clh4-lp2.hq.bc",
+    "port": 8123,
+    "database": "s0173"
+}
+date_dict = {
+    'a': 'today()-1',# переменная больше определенной даты
+    'b': 'today()'}# переменная меньше определенной даты
+url = URL.create(
+    "clickhouse",
+    username=db_config["username"],
+    password=db_config["password"],
+    host=db_config["host"],
+    port=db_config["port"],
+    database=db_config["database"]
+)
+engine = create_engine(url)
+
+# Test the connection
+###########################################################################################
+###########################################################################################
+try:
+    with engine.connect() as conn:
+        print("Connection successful!")
+        # Запрос 1
+        query1 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p1
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                case when toInt32(replaceRegexpAll(`up#shop_test_group`, '\D', '')) >= 0
+                        and toInt32(replaceRegexpAll(`up#shop_test_group`, '\D','')) <=
+                         case when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-10') then 90
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-17') then 79
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-25') then 70
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-30') then 50
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-05-04') then 30
+                         else 10 end
+                    then 1 else 0 end is_clnt_algo,
+                trim(lowerUTF8(search_term)) as search_query,
+                user_id_hash,
+                query_id,
+                case when hint_clicked = 'true' then 1 else 0 end is_hint,
+                case when hint_chips_click = 'true' then 1 else 0 end is_chip,
+                max(ssohash) ssohash,
+                max(toInt32(result_count)) result_count
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp)  < {date_dict['b']}
+                and search_term is not null and empty(search_term) = 0
+                and user_id_hash is not null and empty(user_id_hash) = 0 and user_id_hash != 'unknown'
+                and query_id is not null and empty(query_id) = 0
+                and event_name in ( 'shop_search_results_view')
+            group by dt, is_clnt_algo, search_query, user_id_hash, query_id,  is_hint, is_chip
+            """
+        )
+        df1 = pd.read_sql_query(query1, conn)
+        #print(df.head())
+        print("GOOD1")
+
+        # Запрос 2
+        query2 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p1
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                case when toInt32(replaceRegexpAll(`up#shop_test_group`, '\D', '')) >= 0
+                        and toInt32(replaceRegexpAll(`up#shop_test_group`, '\D','')) <=
+                         case when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-10') then 90
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-17') then 79
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-25') then 70
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-30') then 50
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-05-04') then 30
+                         else 10 end
+                    then 1 else 0 end is_clnt_algo,
+                trim(lowerUTF8(search_term)) as search_query,
+                user_id_hash,
+                event_id,
+                case when hint_clicked = 'true' then 1 else 0 end is_hint,
+                case when hint_chips_click = 'true' then 1 else 0 end is_chip,
+                max(ssohash) ssohash,
+                0
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp)  < {date_dict['b']}
+                and event_name in ('shop_search_results_view')
+                and query_id is null
+                and search_term is not null
+                and user_id_hash is not null and empty(user_id_hash) = 0 and user_id_hash != 'unknown'
+                and result_count = '0'
+            group by dt, is_clnt_algo, search_query, user_id_hash, event_id,  is_hint, is_chip
+            """
+        )
+        df2 = pd.read_sql_query(query2, conn)
+        #print(df.head())
+        print("GOOD2")
+
+        # Запрос 3
+        query3 = text(
+            f"""
+            truncate table kaspi_search_analytics.tmp_rep_search_p2_0
+             """
+        )
+        df3 = pd.read_sql_query(query3, conn)
+        #print(df.head())
+        print("GOOD3")
+
+        # Запрос 4
+        query4 = text(
+            f"""
+            truncate table  kaspi_search_analytics.tmp_rep_search_p2_1
+             """
+        )
+        df4 = pd.read_sql_query(query4, conn)
+        #print(df.head())
+        print("GOOD4")
+
+        # Запрос 5
+        query5 = text(
+            f"""
+            truncate table kaspi_search_analytics.tmp_rep_search_p2_2
+            """
+        )
+        df5 = pd.read_sql_query(query5, conn)
+        #print(df.head())
+        print("GOOD5")
+
+        # Запрос 6
+        query6 = text(
+            f"""
+            truncate table kaspi_search_analytics.tmp_rep_search_p2_3
+            """
+        )
+        df6 = pd.read_sql_query(query6, conn)
+        #print(df.head())
+        print("GOOD6")
+
+        # Запрос 7
+        query7 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p2_0
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                a.user_id_hash,
+                a.query_id ,
+                product_id,
+                category_id,
+                toInt32(`listing_position`) list_pos
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp) < {date_dict['b']}
+                and a.user_id_hash is not null and empty(a.user_id_hash) = 0 and user_id_hash != 'unknown'
+                and a.query_id is not null and empty(a.query_id) = 0
+                and a.event_name in ( 'shop_product_teaser_click')
+                and page_category = 'Search Listing'
+            group by dt, a.user_id_hash, a.query_id, product_id, category_id, list_pos
+             """
+        )
+        df7 = pd.read_sql_query(query7, conn)
+        #print(df.head())
+        print("GOOD7")
+
+        # Запрос 8
+        query8 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p2_1
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                a.user_id_hash,
+                product_id
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp) < {date_dict['b']}
+                and a.user_id_hash is not null and empty(a.user_id_hash) = 0 and user_id_hash != 'unknown'
+                and a.event_name in ( 'shop_add_to_cart_click','shop_favorite_add')
+                and page_category = 'Search Listing'
+            group by dt, a.user_id_hash, product_id
+            """
+        )
+        df8 = pd.read_sql_query(query8, conn)
+        #print(df.head())
+        print("GOOD8")
+
+        # Запрос 9
+        query9 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p2_2
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                a.user_id_hash,
+                max(a.query_id) query_id,
+                product_id,
+                max(category_id) category_id,
+                avg(toInt32(`listing_position`)) list_pos
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp) < {date_dict['b']}
+                and a.user_id_hash is not null and empty(a.user_id_hash) = 0 and user_id_hash != 'unknown'
+                and a.query_id is not null and empty(a.query_id) = 0
+                and 1 = case when event_name in ('shop_search_results_view') then 1
+                    when event_name = 'shop_product_teaser_view' and page_category not in ('TYP Payments', 'TYP QR', 'TYP Transfers') then 1 else 0 end
+                and page_category = 'Search Listing'
+            group by dt, a.user_id_hash, product_id
+            """
+        )
+        df9 = pd.read_sql_query(query9, conn)
+        #print(df.head())
+        print("GOOD9")
+
+        # Запрос 10
+        query10 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p2_3
+            select
+                t2.dt,
+                t2.user_id_hash,
+                t2.query_id ,
+                t2.product_id,
+                t2.category_id,
+                t2.list_pos,
+                t1.user_id_hash user_id_hash1
+            from kaspi_search_analytics.tmp_rep_search_p2_2 t2
+            left join kaspi_search_analytics.tmp_rep_search_p2_1 t1 on t1.dt = t2.dt and t1.user_id_hash = t2.user_id_hash and t1.product_id = t2.product_id   
+            """
+        )
+        df10 = pd.read_sql_query(query10, conn)
+        #print(df.head())
+        print("GOOD10")
+
+        # Запрос 11
+        query11 = text(
+            f"""  
+            insert into kaspi_search_analytics.tmp_rep_search_p2_0
+            select
+                dt,
+                user_id_hash,
+                query_id,
+                product_id,
+                category_id,
+                list_pos
+            from kaspi_search_analytics.tmp_rep_search_p2_3
+            where
+                empty(user_id_hash1) = 0
+            """
+        )
+        df11 = pd.read_sql_query(query11, conn)
+        # print(df.head())
+        print("GOOD11")
+
+        # Запрос 12
+        query12 = text(
+            f""" 
+            insert into kaspi_search_analytics.tmp_rep_search_p2
+            select
+                dt,
+                user_id_hash,
+                query_id,
+                product_id,
+                category_id,
+                min(list_pos) list_pos
+            from kaspi_search_analytics.tmp_rep_search_p2_0
+            group by
+                dt,
+                user_id_hash,
+                query_id,
+                product_id,
+                category_id  
+            """
+        )
+        df12 = pd.read_sql_query(query12, conn)
+        # print(df.head())
+        print("GOOD12")
+
+        # Запрос 13
+        query13 = text(
+            f"""  
+            insert into kaspi_search_analytics.tmp_rep_search_p2_sku
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                case when toInt32(replaceRegexpAll(`up#shop_test_group`, '\D', '')) >= 0
+                        and toInt32(replaceRegexpAll(`up#shop_test_group`, '\D','')) <=
+                            case when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-10') then 90 when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-17') then 79
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-25') then 70
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-30') then 50
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-05-04') then 30
+                         else 10 end
+                    then 1 else 0 end is_clnt_algo,
+                user_id_hash,
+                product_id,
+                category_id
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp)  < {date_dict['b']}
+                and user_id_hash is not null and empty(user_id_hash) = 0 and user_id_hash != 'unknown'
+                and event_name in ( 'shop_product_teaser_click','shop_add_to_cart_click','shop_favorite_add')
+                and page_category = 'Search Listing'
+                and category_id is not null
+            group by dt, is_clnt_algo, user_id_hash, product_id, category_id 
+            """
+        )
+        df13 = pd.read_sql_query(query13, conn)
+        # print(df.head())
+        print("GOOD13")
+
+        # Запрос 14
+        query14 = text(
+            f"""  
+            truncate table kaspi_search_analytics.tmp_rep_search_p2_sku_dbl
+            """
+        )
+        df14 = pd.read_sql_query(query14, conn)
+        # print(df.head())
+        print("GOOD14")
+
+        # Запрос 15
+        query15 = text(
+            f"""  
+            insert into kaspi_search_analytics.tmp_rep_search_p2_sku_dbl
+			select
+			dt,
+			user_id_hash,
+			product_id,
+			count(1) cnt
+			from kaspi_search_analytics.tmp_rep_search_p2_sku
+			group by
+			dt,
+			user_id_hash,
+			product_id
+			having
+			count(1)>1       
+            """
+        )
+        df15 = pd.read_sql_query(query15, conn)
+        # print(df.head())
+        print("GOOD15")
+
+        # Запрос 16
+        query16 = text(
+            f"""  
+            delete from kaspi_search_analytics.tmp_rep_search_p2_sku
+            where
+            toString(dt)||user_id_hash in (select toString(dt)||user_id_hash from kaspi_search_analytics.tmp_rep_search_p2_sku_dbl)
+             """
+        )
+        df16= pd.read_sql_query(query16, conn)
+        # print(df.head())
+        print("GOOD16")
+
+        # Запрос 17
+        query17 = text(
+            f""" 
+            insert into kaspi_search_analytics.shop_user_order
+            select
+                a.*
+            from
+                (
+                select
+                    *,
+                    row_number() over(partition by user_order_id order by s$change_date desc) rn
+                from
+                    s0009.shop_user_order
+                where create_date >= {date_dict['a']} and create_date < {date_dict['b']} 
+                )  a
+            where
+                rn = 1 
+            """
+        )
+        df17 = pd.read_sql_query(query17, conn)
+        # print(df.head())
+        print("GOOD17")
+
+        # Запрос 18
+        query18 = text(
+            f"""  
+            insert into kaspi_search_analytics.shop_user_basket_order
+            select now(), order_time, process_num, article_number, 0, 0, item_price, null, cat_id, 0, null, 0, 0, null from s0009.shop_user_basket_order b
+            where
+                toDate(order_time) >= {date_dict['a']}
+                and toDate(order_time) < {date_dict['b']}
+            """
+        )
+        df18 = pd.read_sql_query(query18, conn)
+        # print(df.head())
+        print("GOOD18")
+
+        # Запрос 19
+        query19 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p3_aster
+            select
+                row_number() over(partition by toDate(a.create_date) order by b.article_number) rowNo,
+                toDate(a.create_date) create_date,
+                a.user_id_hash,
+                b.article_number,
+                c.bucket_code,
+                b.cat_id,
+                count(distinct user_order_id) cnt_orders_aster,
+                sum(b.item_price) item_price_aster,
+                sum(case when is_approved_by_bank=1 then b.item_price else 0 end) item_price_approved
+            from
+                kaspi_search_analytics.shop_user_order  a
+                left join kaspi_search_analytics.shop_user_basket_order b on (b.process_num = a.num_order)
+                left join kaspi_search_analytics.shop_item_cat_dict c on b.article_number = c.article_number
+            where
+                 a.create_date >= {date_dict['a']} and a.create_date <  {date_dict['b']}
+                and b.order_time >= {date_dict['a']} and b.order_time <  {date_dict['b']}
+            group by
+                toDate(a.create_date),
+                a.user_id_hash,
+                b.article_number,
+                c.bucket_code,
+                b.cat_id  
+            """
+        )
+        df19 = pd.read_sql_query(query19, conn)
+        # print(df.head())
+        print("GOOD19")
+
+        # Запрос 20
+        query20 = text(
+            f"""
+            insert into kaspi_search_analytics.shop_clients
+            select
+                toDate(a.approximatearrivaltimestamp) dt,
+                a.user_id_hash,
+                min(    case when toInt32(replaceRegexpAll(`up#shop_test_group`, '\D', '')) >= 0
+                        and toInt32(replaceRegexpAll(`up#shop_test_group`, '\D','')) <= case when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-10') then 90
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-17') then 79
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-25') then 70
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-04-30') then 50
+                         when toDate(a.approximatearrivaltimestamp) < toDate('2024-05-04') then 30
+                         else 10 end
+                    then 1 else 0 end) is_clnt_algo,
+                min(toInt32(replaceRegexpAll(`up#shop_test_group`, '\D', ''))) shop_test_group
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp)  < {date_dict['b']}
+                and `up#shop_test_group` is not null
+                and 1 = case when event_name in (
+                'shop_main_recommendation_view','shop_main_past_orders_click','shop_main_screen_view',
+            'shop_main_past_order_view','shop_main_banners_click','shop_main_banners_view','shop_main_promo_banner_view',
+            'shop_main_promo_banner_click','shop_main_brand_block_view','shop_main_brand_block_click','shop_main_all_brand_click',
+            'shop_city_change_click','shop_city_selection_view','shop_city_selection_chosen',
+            'shop_category_listing_view','shop_listing_filter_category_click',
+            'shop_share_icon_click','shop_listing_tab_click','shop_category_listing_photo_swipe','shop_listing_filters_view',
+            'shop_tag_filter_backdrop','shop_listing_filter_apply','shop_clicked_reset_filters','shop_listing_layout_change',
+            'shop_listing_sort_click','shop_listing_sort_apply','shop_listing_tag_filter_apply','shop_delivery_filters_apply',
+            'shop_delivery_filters_reset','shop_listing_product_merchants_view',
+            'shop_search_form_view','shop_search_hint_clicked','shop_search_hint_viewed','shop_search_results_view',
+            'shop_search_query_start','shop_search_all_click',--'shop_product_teaser_view',
+            'shop_product_teaser_click','shop_landing_page_view',
+            'shop_landing_page_category_click','promotion_landing_page','shop_backdrop_view','shop_backdrop_click','shop_backdrop_close'
+            ) then 1
+            when event_name = 'shop_product_teaser_view' and page_category not in ('TYP Payments', 'TYP QR', 'TYP Transfers') then 1 else 0 end
+            group by
+                dt,
+                a.user_id_hash  
+            """
+        )
+        df20 = pd.read_sql_query(query20, conn)
+        # print(df.head())
+        print("GOOD20")
+
+        # Запрос 21
+        query21 = text(
+            f""" 
+            insert into kaspi_search_analytics.tmp_rep_search_p4_aster
+            select
+                c.dt,
+                d.rowNo,
+                c.is_clnt_algo,
+                c.user_id_hash,
+                c.product_id,
+                c.category_id,
+                d.cnt_orders_aster,
+                d.item_price_aster,
+                d.item_price_approved
+            from
+                kaspi_search_analytics.tmp_rep_search_p2_sku c
+                join kaspi_search_analytics.tmp_rep_search_p3_aster d on c.dt = d.create_date and c.user_id_hash = d.user_id_hash and  c.product_id = ifNull(d.bucket_code, d.article_number)
+            where
+                c.dt >= {date_dict['a']} 
+                and c.dt < {date_dict['b']}
+            """
+        )
+        df21 = pd.read_sql_query(query21, conn)
+        # print(df.head())
+        print("GOOD21")
+
+        # Запрос 22
+        query22 = text(
+            f"""
+            truncate table kaspi_search_analytics.tmp_rep_search_p5  
+            """
+        )
+        df22 = pd.read_sql_query(query22, conn)
+        # print(df.head())
+        print("GOOD22")
+
+        # Запрос 23
+        query23 = text(
+            f"""  
+            insert into kaspi_search_analytics.tmp_rep_search_p5
+            select
+                ssohash
+            from s0173.aws_events a
+            where
+                toDate(a.approximatearrivaltimestamp) >= {date_dict['a']}
+                and toDate(a.approximatearrivaltimestamp)  < {date_dict['b']}
+                and event_name in ('shop_search_hint_viewed')
+            group by ssohash
+            """
+        )
+        df23 = pd.read_sql_query(query23, conn)
+        # print(df.head())
+        print("GOOD23")
+
+        # Запрос 24
+        query24 = text(
+            f"""
+            insert into kaspi_search_analytics.tmp_rep_search_p9
+            select
+            a1.dt as dt,
+            a1.search_query as search_query,
+            a1.user_id_hash as user_id_hash,
+            a1.query_id query_id,
+            a1.is_clnt_algo	is_clnt_algo,
+            a1.query_id1 query_id1,
+            a1.product_id product_id,
+            a1.category_id category_id,
+            list_pos,
+            is_hint,
+            is_chip,
+            a1.rn_product rn_product,
+            a1.rn_category rn_category,
+            a1.rn_query rn_query,
+            case when a1.rn_query = 1 then m_list_pos else null end med_list_pos,
+            0 user_w_order,
+            0 cnt_orders,
+            0 item_price,
+            0 cnt_orders_cat,
+            0 item_price_cat,
+            c_ast.user_id_hash user_w_order_aster,
+            c_ast.cnt_orders_aster cnt_orders_aster,
+            c_ast.item_price_aster item_price_aster,
+            c_ast.item_price_approved item_price_approved,
+            e_ast.cnt_orders_aster cnt_orders_cat_aster,
+            e_ast.item_price_aster item_price_cat_aster,
+            f.ssohash ssohash,
+            result_count
+            from
+            (select
+                a.dt,
+                a.search_query,
+                a.user_id_hash,
+                a.query_id,
+                a.is_clnt_algo,
+                b.query_id query_id1,
+                b.product_id,
+                b.category_id,
+                list_pos,
+                a.is_hint,
+                a.is_chip,
+                ssohash,
+                result_count,
+                row_number() over(partition by a.dt, a.user_id_hash, b.product_id order by query_id) rn_product,
+                row_number() over(partition by a.dt, a.user_id_hash, b.category_id order by query_id) rn_category,
+                row_number() over(partition by b.query_id order by b.product_id)  rn_query,
+                median(list_pos) over(partition by b.query_id) m_list_pos
+            from
+                kaspi_search_analytics.tmp_rep_search_p1 a
+                left join kaspi_search_analytics.tmp_rep_search_p2 b on a.dt = b.dt and a.query_id = b.query_id
+            where 	a.dt >= {date_dict['a']}
+                and a.dt < {date_dict['b']}
+                ) as a1
+            left join kaspi_search_analytics.tmp_rep_search_p4_aster c_ast on a1.dt = c_ast.dt and a1.user_id_hash = c_ast.user_id_hash and a1.product_id = c_ast.product_id and a1.rn_product=1 and a1.query_id1 is not null
+            left join (
+                        select * from kaspi_search_analytics.tmp_rep_search_p3_aster
+                        where toString(create_date)||toString(rowNo) not in (select toString(dt)||toString(rowNo) from kaspi_search_analytics.tmp_rep_search_p4_aster)
+                      ) e_ast on a1.dt = e_ast.create_date and a1.user_id_hash = e_ast.user_id_hash and toInt32(a1.category_id) = toInt32(e_ast.cat_id) and a1.rn_category=1 and a1.query_id1 is not null
+            left join kaspi_search_analytics.tmp_rep_search_p5 f on f.ssohash = a1.ssohash  
+            """
+        )
+        df24 = pd.read_sql_query(query24, conn)
+        # print(df.head())
+        print("GOOD24")
+        print("That's all")
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
