@@ -1,0 +1,186 @@
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
+import pandas as pd
+
+# Define the connection parameters
+db_config = {
+    "username": "kolzhabay_58244",
+    "password": "2@#$KP",
+    "host": "dwh-clh4-lp2.hq.bc",
+    "port": 8123,
+    "database": "s0173"
+}
+date_dict = {
+    'a': 'today()-1', # переменная больше определенной даты
+    'b': 'today()'} # переменная меньше определенной даты
+url = URL.create(
+    "clickhouse",
+    username=db_config["username"],
+    password=db_config["password"],
+    host=db_config["host"],
+    port=db_config["port"],
+    database=db_config["database"]
+)
+engine = create_engine(url)
+
+# Test the connection
+###########################################################################################
+###########################################################################################
+try:
+    with engine.connect() as conn:
+        print("Connection successful!")
+        # Запрос 1
+        query1 = text(
+            f"""
+            delete from kaspi_search_analytics.tmp_rep_search_p1
+            where dt >= {date_dict['a']} and dt < {date_dict['b']}
+            """
+        )
+        df1 = pd.read_sql_query(query1, conn)
+        #print(df.head())
+        print("GOOD1")
+
+        # Запрос 2
+        query2 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2_0
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+            """
+        )
+        df2 = pd.read_sql_query(query2, conn)
+        #print(df.head())
+        print("GOOD2")
+
+        # Запрос 3
+        query3 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2_1
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+             """
+        )
+        df3 = pd.read_sql_query(query3, conn)
+        #print(df.head())
+        print("GOOD3")
+
+        # Запрос 4
+        query4 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2_2
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+             """
+        )
+        df4 = pd.read_sql_query(query4, conn)
+        #print(df.head())
+        print("GOOD4")
+
+        # Запрос 5
+        query5 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2_3
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+             """
+        )
+        df5 = pd.read_sql_query(query5, conn)
+        #print(df.head())
+        print("GOOD5")
+
+        # Запрос 6
+        query6 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+             """
+        )
+        df6 = pd.read_sql_query(query6, conn)
+        #print(df.head())
+        print("GOOD6")
+
+        # Запрос 7
+        query7 = text(
+            f"""
+                delete from kaspi_search_analytics.tmp_rep_search_p2_sku
+                where dt >= {date_dict['a']} and dt < {date_dict['b']}
+             """
+        )
+        df7 = pd.read_sql_query(query7, conn)
+        #print(df.head())
+        print("GOOD7")
+
+        # Запрос 8
+        query8 = text(
+            f"""
+            truncate table kaspi_search_analytics.tmp_rep_search_p2_sku_dbl 
+            """
+        )
+        df8 = pd.read_sql_query(query8, conn)
+        #print(df.head())
+        print("GOOD8")
+
+        # Запрос 9
+        query9 = text(
+            f"""
+            delete from kaspi_search_analytics.shop_user_order 
+            where create_date >= {date_dict['a']} and create_date < {date_dict['b']} 
+            """
+        )
+        df9 = pd.read_sql_query(query9, conn)
+        #print(df.head())
+        print("GOOD9")
+
+        # Запрос 10
+        query10 = text(
+            f"""   
+            delete from kaspi_search_analytics.shop_user_basket_order
+            where order_time >= {date_dict['a']} and order_time < {date_dict['b']} 
+            """
+        )
+        df10 = pd.read_sql_query(query10, conn)
+        #print(df.head())
+        print("GOOD10")
+
+        # Запрос 11
+        query11 = text(
+            f"""   
+            delete from kaspi_search_analytics.tmp_rep_search_p3_aster
+            where create_date >= {date_dict['a']}  and create_date < {date_dict['b']}
+            """
+        )
+        df11 = pd.read_sql_query(query11, conn)
+        # print(df.head())
+        print("GOOD11")
+
+        # Запрос 12
+        query12 = text(
+            f"""   
+            delete from kaspi_search_analytics.shop_clients
+            where dt >= {date_dict['a']} and dt < {date_dict['b']}
+            """
+        )
+        df12 = pd.read_sql_query(query12, conn)
+        # print(df.head())
+        print("GOOD12")
+
+        # Запрос 13
+        query13 = text(
+            f"""   
+            delete from kaspi_search_analytics.tmp_rep_search_p4_aster
+            where dt >= {date_dict['a']} and dt < {date_dict['b']}
+            """
+        )
+        df13 = pd.read_sql_query(query13, conn)
+        # print(df.head())
+        print("GOOD13")
+
+        # Запрос 14
+        query14 = text(
+            f"""   
+            delete from kaspi_search_analytics.tmp_rep_search_p9  
+            where dt >= {date_dict['a']} and dt < {date_dict['b']}
+            """
+        )
+        df14 = pd.read_sql_query(query14, conn)
+        # print(df.head())
+        print("GOOD14")
+        print("That's all")
+except Exception as e:
+    print(f"An error occurred: {e}")
